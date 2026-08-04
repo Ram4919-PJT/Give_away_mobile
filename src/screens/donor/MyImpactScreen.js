@@ -1,10 +1,9 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Button, Card, Screen } from '../../components/ui';
 import DonationTimeline from '../../components/DonationTimeline';
 import { useAuth } from '../../context/AuthContext';
-import { IMPACT_STORIES } from '../../data/donorConstants';
 import { formatCurrency } from '../../utils/format';
 import {
   getDonorDonations,
@@ -18,8 +17,7 @@ const STATS = [
   { key: 'totalDonations', label: 'Total Donations', icon: 'gift-outline' },
   { key: 'itemsDonated', label: 'Items Donated', icon: 'cube-outline' },
   { key: 'moneyDonated', label: 'Money Donated', icon: 'cash-outline', money: true },
-  { key: 'livesImpacted', label: 'Lives Impacted', icon: 'people-outline' },
-  { key: 'familiesHelped', label: 'Families Helped', icon: 'heart-outline' },
+  { key: 'completedDonations', label: 'Completed', icon: 'checkmark-circle-outline' },
 ];
 
 export default function MyImpactScreen() {
@@ -37,7 +35,7 @@ export default function MyImpactScreen() {
           </Text>
           <Button
             title="Complete Verification"
-            onPress={() => Alert.alert('Give Away', 'Verification flow coming soon.')}
+            onPress={() => navigation.navigate('Settings', { screen: 'DonorVerify' })}
             style={{ alignSelf: 'stretch', marginTop: spacing.sm }}
           />
         </Card>
@@ -48,7 +46,6 @@ export default function MyImpactScreen() {
   const stats = getDonorStats(donations, currentUser);
   const list = getDonorDonations(donations, currentUser);
   const completed = list.filter((d) => normalizeDonorStatus(d.status) === 'Completed');
-  const withBeneficiary = completed.filter((d) => d.beneficiary);
 
   return (
     <Screen scroll contentStyle={styles.content}>
@@ -122,74 +119,23 @@ export default function MyImpactScreen() {
         </View>
       )}
 
-      {withBeneficiary.length > 0 ? (
+      {completed.length > 0 ? (
         <>
-          <Text style={styles.sectionTitle}>Beneficiary Information</Text>
+          <Text style={styles.sectionTitle}>Completed Donations</Text>
           <View style={styles.list}>
-            {withBeneficiary.map((d) => (
-              <Card key={d.id} style={styles.beneficiaryCard}>
-                <View style={styles.grid}>
-                  {[
-                    ['Name', d.beneficiary.displayName],
-                    ['City', d.beneficiary.city],
-                    ['Assistance Type', d.beneficiary.assistanceType],
-                    ['Status', d.beneficiary.status],
-                  ].map(([label, value]) => (
-                    <View key={label} style={styles.gridItem}>
-                      <Text style={styles.gridLabel}>{label}</Text>
-                      <Text style={styles.gridValue}>{value}</Text>
-                    </View>
-                  ))}
-                </View>
+            {completed.map((d) => (
+              <Card key={d.id} style={styles.historyCard}>
+                <Text style={styles.historyId}>{d.id}</Text>
+                <Text style={styles.historyMeta}>
+                  {d.type} ·{' '}
+                  {d.type === 'Financial' ? formatCurrency(d.amount) : d.category || d.fund} ·{' '}
+                  {d.date}
+                </Text>
               </Card>
             ))}
           </View>
         </>
       ) : null}
-
-      <Text style={styles.sectionTitle}>Impact Stories</Text>
-      <View style={styles.list}>
-        {IMPACT_STORIES.map((s) => (
-          <Card key={s.id} style={styles.storyCard}>
-            <View style={styles.storyBody}>
-              <Text style={styles.storyEmoji}>{s.emoji}</Text>
-              <Text style={styles.storyCat}>{s.category}</Text>
-              <Text style={styles.storyTitle}>{s.title}</Text>
-              <Text style={styles.storySummary}>{s.summary}</Text>
-            </View>
-            <View style={styles.storyFooter}>
-              <Text style={styles.storyDate}>{s.date}</Text>
-              <Pressable onPress={() => Alert.alert('Give Away', 'Full story coming soon.')}>
-                <Text style={styles.readMore}>Read More</Text>
-              </Pressable>
-            </View>
-          </Card>
-        ))}
-      </View>
-
-      <Text style={styles.sectionTitle}>Delivery Confirmation</Text>
-      <Card style={styles.delivery}>
-        <Ionicons name="image-outline" size={32} color={colors.textMuted} />
-        <Text style={styles.deliveryText}>
-          Delivery photos are shown only when consent has been provided.
-        </Text>
-        <Text style={styles.deliveryIllus}>📦 ✨ 🤝</Text>
-      </Card>
-
-      <View style={styles.downloadRow}>
-        <Button
-          title="Download Receipt"
-          variant="secondary"
-          onPress={() => Alert.alert('Give Away', 'Receipt downloaded.')}
-          style={{ flex: 1 }}
-        />
-        <Button
-          title="Impact Report"
-          variant="secondary"
-          onPress={() => Alert.alert('Give Away', 'Impact report downloaded.')}
-          style={{ flex: 1 }}
-        />
-      </View>
 
       <Card style={styles.thanks}>
         <Ionicons name="star" size={24} color={colors.primaryHover} />

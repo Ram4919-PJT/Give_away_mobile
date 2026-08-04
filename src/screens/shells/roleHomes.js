@@ -1,15 +1,28 @@
 import RoleHomeShell from './RoleHomeShell';
 import PlaceholderScreen from './PlaceholderScreen';
+import { useAuth } from '../../context/AuthContext';
+import { getDonorStats } from '../../utils/donorHelpers';
+import { formatCurrency } from '../../utils/format';
 
 export function DonorHomeScreen() {
+  const { currentUser, donations, platformLoading, refreshPlatformData, notifications } = useAuth();
+  const stats = getDonorStats(donations, currentUser);
+  const unread = (notifications || []).filter((n) => !n.read).length;
+
   return (
     <RoleHomeShell
       title="Donor dashboard"
       subtitle="Give items or funds, then track where your support goes."
-      stats={[
-        ['8', 'Donations'],
-        ['₹12k', 'Given'],
-        ['5', 'Families'],
+      refreshing={platformLoading}
+      onRefresh={() => refreshPlatformData(currentUser?.role)}
+      stats={platformLoading && !stats.totalDonations ? [
+        ['…', 'Donations'],
+        ['…', 'Given'],
+        ['…', 'Families'],
+      ] : [
+        [String(stats.totalDonations), 'Donations'],
+        [stats.moneyDonated > 0 ? formatCurrency(stats.moneyDonated) : '₹0', 'Given'],
+        [String(stats.completedDonations), 'Completed'],
       ]}
       actions={[
         {
@@ -26,13 +39,14 @@ export function DonorHomeScreen() {
           tab: 'Donate',
           params: { screen: 'DonateItem' },
         },
-        { label: 'My Impact', desc: 'See deliveries and outcomes', icon: 'trending-up-outline', tab: 'Impact' },
         {
-          label: 'Settings',
-          desc: 'Notifications, privacy, and preferences',
-          icon: 'settings-outline',
+          label: 'Notifications',
+          desc: unread > 0 ? `${unread} unread updates` : 'Donation and verification updates',
+          icon: 'notifications-outline',
           tab: 'Settings',
+          params: { screen: 'DonorNotifications' },
         },
+        { label: 'My Impact', desc: 'See deliveries and outcomes', icon: 'trending-up-outline', tab: 'Impact' },
       ]}
     />
   );

@@ -10,15 +10,24 @@ const GROUPS = [
   { key: 'earlier', label: 'Earlier' },
 ];
 
-export default function ReceiverNotificationsScreen() {
-  const { receiverNotifications, markReceiverNotificationRead, platformLoading } = useAuth();
-  const list = receiverNotifications || [];
+export default function DonorNotificationsScreen() {
+  const { notifications, markNotificationRead, platformLoading, refreshPlatformData, currentUser } = useAuth();
+  const list = notifications || [];
+  const unread = list.filter((n) => !n.read).length;
 
   return (
-    <Screen scroll contentStyle={styles.content}>
+    <Screen
+      scroll
+      contentStyle={styles.content}
+      refreshing={platformLoading}
+      onRefresh={() => refreshPlatformData(currentUser?.role)}
+    >
       <View style={styles.hero}>
         <Text style={styles.title}>Notifications</Text>
-        <Text style={styles.subtitle}>Status updates from AJA Abayahastham</Text>
+        <Text style={styles.subtitle}>
+          Stay updated on your donations and verification status.
+          {unread > 0 ? ` ${unread} unread.` : ''}
+        </Text>
       </View>
 
       {platformLoading && !list.length ? (
@@ -31,7 +40,7 @@ export default function ReceiverNotificationsScreen() {
             <Ionicons name="notifications-outline" size={28} color={colors.textMuted} />
           </View>
           <Text style={styles.emptyTitle}>You're all caught up</Text>
-          <Text style={styles.emptyBody}>Application updates will show here.</Text>
+          <Text style={styles.emptyBody}>Donation and verification updates will appear here.</Text>
         </View>
       ) : (
         GROUPS.map((g) => {
@@ -44,7 +53,7 @@ export default function ReceiverNotificationsScreen() {
                 {items.map((n, index) => (
                   <Pressable
                     key={n.id}
-                    onPress={() => markReceiverNotificationRead(n.id)}
+                    onPress={() => markNotificationRead(n.id)}
                     style={[
                       styles.item,
                       index < items.length - 1 && styles.itemBorder,
@@ -52,11 +61,7 @@ export default function ReceiverNotificationsScreen() {
                     ]}
                   >
                     <View style={[styles.iconWrap, !n.read && styles.iconWrapUnread]}>
-                      <Ionicons
-                        name={n.icon || 'notifications-outline'}
-                        size={18}
-                        color={colors.primaryHover}
-                      />
+                      <Ionicons name="notifications-outline" size={18} color={colors.primaryHover} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.itemTitle}>{n.title}</Text>
@@ -76,109 +81,63 @@ export default function ReceiverNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  hero: {
-    gap: 4,
-  },
-  title: {
-    ...typography.title,
-  },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textSecondary,
-  },
-  group: {
+  content: { gap: spacing.lg },
+  hero: { gap: spacing.xs },
+  title: { ...typography.title },
+  subtitle: { ...typography.body },
+  empty: {
+    alignItems: 'center',
+    padding: spacing.xl,
     gap: spacing.sm,
   },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.borderSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: { ...typography.section },
+  emptyBody: { ...typography.body, textAlign: 'center' },
+  group: { gap: spacing.sm },
   groupTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textMuted,
+    ...typography.caption,
     textTransform: 'uppercase',
-    letterSpacing: 0.7,
-    paddingHorizontal: 2,
+    letterSpacing: 0.6,
   },
   groupCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   item: {
     flexDirection: 'row',
-    gap: spacing.md,
     alignItems: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    padding: spacing.md,
   },
-  itemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSoft,
-  },
-  unread: {
-    backgroundColor: '#F8FFFB',
-  },
+  itemBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  unread: { backgroundColor: '#F0FDF4' },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.background,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapUnread: {
-    backgroundColor: colors.primarySoft,
-  },
-  itemTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  itemMsg: {
-    marginTop: 3,
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.textSecondary,
-  },
-  itemTime: {
-    marginTop: 6,
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
+  iconWrapUnread: { backgroundColor: '#DCFCE7' },
+  itemTitle: { ...typography.label, color: colors.text },
+  itemMsg: { ...typography.body, marginTop: 2 },
+  itemTime: { ...typography.caption, marginTop: 4 },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryHover,
     marginTop: 6,
-  },
-  empty: {
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: spacing.xxl,
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: colors.borderSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  emptyBody: {
-    fontSize: 13,
-    color: colors.textSecondary,
   },
 });

@@ -1,15 +1,21 @@
-import { APPLY_ASSISTANCE_CATEGORIES } from '../data/receiverApplyConfig';
-
 export function getReceiverApps(apps, user) {
   if (!user) return [];
-  const key = (user.email || '').toLowerCase();
-  return (apps || []).filter((a) => (a.receiverEmail || '').toLowerCase() === key);
+  const emailKey = (user.email || '').toLowerCase();
+  const userId = user.id || user.user_id || user.userId;
+  const list = apps || [];
+  const matched = list.filter(
+    (a) =>
+      (userId && a.receiver_user_id === userId) ||
+      (a.receiverEmail || '').toLowerCase() === emailKey
+  );
+  if (!matched.length && list.length && user.role === 'receiver') return list;
+  return matched;
 }
 
 export function getReceiverStats(apps) {
   const list = apps || [];
   return {
-    submitted: list.filter((a) => a.status !== 'Draft').length,
+    submitted: list.length,
     underReview: list.filter((a) =>
       ['Submitted', 'Documents Verified', 'Under Review'].includes(a.status)
     ).length,
@@ -34,7 +40,7 @@ export function getTimelineIndex(status) {
   const idx = steps.indexOf(status);
   if (idx >= 0) return idx;
   if (status === 'Draft') return -1;
-  return 1;
+  return status === 'Under Review' ? 2 : 0;
 }
 
 export function getCardTimelineIndex(status) {
@@ -65,36 +71,6 @@ export function statusTone(status) {
     Rejected: { bg: '#FEF2F2', text: '#B91C1C' },
   };
   return map[status] || map.Draft;
-}
-
-export function buildReceiverApplicationFromFlow({ categoryId, form, user }) {
-  const cat = APPLY_ASSISTANCE_CATEGORIES.find((c) => c.id === categoryId);
-  const year = new Date().getFullYear();
-  const id = `APP-${year}-${String(Date.now()).slice(-5)}`;
-  const appliedDate = new Date().toISOString().split('T')[0];
-  const amountRaw = String(form.amount || '').replace(/[^\d.]/g, '');
-
-  return {
-    id,
-    receiverEmail: user?.email || '',
-    receiverName: user?.name || 'Receiver',
-    assistanceType: cat?.title || 'Financial Assistance',
-    assistanceIcon: cat?.icon || '📋',
-    purpose: form.purpose?.trim() || 'Financial assistance request',
-    amount: Number(amountRaw) || 0,
-    description: form.description?.trim() || '',
-    notes: form.notes?.trim() || '',
-    status: 'Submitted',
-    appliedDate,
-    documents: {
-      'Aadhaar Card': { filename: 'aadhaar_card.pdf', uploaded: true },
-      'Income Certificate': { filename: 'income_certificate.pdf', uploaded: true },
-      'Supporting Document': { filename: 'supporting_document.pdf', uploaded: true },
-    },
-    rejectionReason: null,
-    reviewNotes:
-      'Your application is queued for initial review by the AJA Abayahastham verification team.',
-  };
 }
 
 export function getInitials(name) {

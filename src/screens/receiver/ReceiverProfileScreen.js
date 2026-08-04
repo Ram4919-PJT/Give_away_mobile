@@ -13,7 +13,7 @@ import { colors, radius, spacing } from '../../theme';
 
 export default function ReceiverProfileScreen() {
   const navigation = useNavigation();
-  const { currentUser, receiverApplications, updateUser, logout } = useAuth();
+  const { currentUser, receiverApplications, updateUser, requestLogout, logoutLoading } = useAuth();
   const apps = getReceiverApps(receiverApplications, currentUser);
   const stats = getReceiverStats(apps);
 
@@ -184,7 +184,7 @@ export default function ReceiverProfileScreen() {
         ))}
       </View>
 
-      <Button title="Sign out" variant="secondary" onPress={logout} />
+      <Button title={logoutLoading ? 'Signing out…' : 'Sign out'} variant="secondary" onPress={requestLogout} loading={logoutLoading} />
     </Screen>
   );
 }

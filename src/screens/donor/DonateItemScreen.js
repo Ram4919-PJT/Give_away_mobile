@@ -21,6 +21,7 @@ import {
   ITEM_CONDITIONS,
 } from '../../data/donateItemCategories';
 import { colors, radius, spacing, typography } from '../../theme';
+import { buildItemDonationNotes } from '../../api/mappers';
 
 const STEPS = ['Category', 'Details', 'Pickup'];
 
@@ -74,9 +75,10 @@ function Chip({ label, selected, onPress }) {
 
 export default function DonateItemScreen() {
   const navigation = useNavigation();
-  const { currentUser, addDonation } = useAuth();
+  const { submitDonation } = useAuth();
 
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [selections, setSelections] = useState({});
   const [description, setDescription] = useState('');
@@ -112,41 +114,40 @@ export default function DonateItemScreen() {
     ]);
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!categoryComplete || !description.trim() || !pickupAddress.trim() || !pickupDate.trim()) {
       Alert.alert('Give Away', 'Complete all required fields.');
       return;
     }
 
-    addDonation({
-      id: `don-${Date.now()}`,
-      donor: currentUser?.name,
-      donorEmail: currentUser?.email,
-      type: 'Items',
-      amount: null,
-      fund: categoryLabel,
-      category: categoryLabel,
-      purpose: categoryConfig?.label,
-      details: description.trim(),
-      date: new Date().toISOString().split('T')[0],
-      status: 'Pending Pickup',
-      pickupAddress: pickupAddress.trim(),
-      pickupDate,
-      imageCount: images.length,
-      itemSelections: { categoryId, ...selections },
-    });
+    setSubmitting(true);
+    try {
+      await submitDonation({
+        donation_type: 'ITEM',
+        notes: buildItemDonationNotes({
+          category: categoryLabel,
+          description: description.trim(),
+          pickupAddress: pickupAddress.trim(),
+          pickupDate,
+        }),
+      });
 
-    Alert.alert('Thank you', 'Item donation submitted! AJA will confirm pickup.', [
-      { text: 'OK', onPress: () => navigation.navigate('DonateHub') },
-    ]);
+      Alert.alert('Thank you', 'Item donation submitted! AJA will confirm pickup.', [
+        { text: 'OK', onPress: () => navigation.navigate('DonateHub') },
+      ]);
 
-    setStep(1);
-    setCategoryId('');
-    setSelections({});
-    setDescription('');
-    setPickupAddress('');
-    setPickupDate('');
-    setImages([]);
+      setStep(1);
+      setCategoryId('');
+      setSelections({});
+      setDescription('');
+      setPickupAddress('');
+      setPickupDate('');
+      setImages([]);
+    } catch (err) {
+      Alert.alert('Give Away', err.message || 'Could not submit donation.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -369,7 +370,7 @@ export default function DonateItemScreen() {
             style={{ flex: 1 }}
           />
         ) : (
-          <Button title="Submit Donation" onPress={submit} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Submitting…' : 'Submit Donation'} onPress={submit} disabled={submitting} style={{ flex: 1 }} />
         )}
       </View>
     </Screen>

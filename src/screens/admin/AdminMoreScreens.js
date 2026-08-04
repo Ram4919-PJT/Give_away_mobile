@@ -46,7 +46,7 @@ function Back({ label = 'More' }) {
 
 export function AdminMoreHubScreen() {
   const navigation = useNavigation();
-  const { logout, currentUser } = useAuth();
+  const { currentUser, requestLogout, logoutLoading } = useAuth();
 
   return (
     <Screen scroll contentStyle={styles.pad} style={{ backgroundColor: BG }}>
@@ -72,7 +72,7 @@ export function AdminMoreHubScreen() {
         </Pressable>
       ))}
 
-      <Button title="Sign out" variant="secondary" onPress={logout} style={{ marginTop: 8 }} />
+      <Button title={logoutLoading ? 'Signing out…' : 'Sign out'} variant="secondary" onPress={requestLogout} loading={logoutLoading} style={{ marginTop: 8 }} />
     </Screen>
   );
 }
