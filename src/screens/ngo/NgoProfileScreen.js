@@ -43,7 +43,7 @@ const LINKS = [
 
 export default function NgoProfileScreen() {
   const navigation = useNavigation();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, requestLogout, logoutLoading } = useAuth();
   const orgName = (currentUser?.name || 'NGO Partner').replace(/\s*\(Demo\)\s*$/i, '');
 
   return (
@@ -86,7 +86,7 @@ export default function NgoProfileScreen() {
         </Pressable>
       ))}
 
-      <Button title="Sign out" variant="secondary" onPress={logout} style={{ marginTop: 8 }} />
+      <Button title={logoutLoading ? 'Signing out…' : 'Sign out'} variant="secondary" onPress={requestLogout} loading={logoutLoading} style={{ marginTop: 8 }} />
     </Screen>
   );
 }

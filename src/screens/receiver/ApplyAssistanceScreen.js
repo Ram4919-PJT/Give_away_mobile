@@ -17,7 +17,6 @@ import {
   APPLY_UPLOAD_PLACEHOLDERS,
   APPLY_WIREFRAME_DOCUMENTS,
 } from '../../data/receiverApplyConfig';
-import { buildReceiverApplicationFromFlow } from '../../utils/receiverHelpers';
 import { colors, radius, spacing, typography } from '../../theme';
 
 function Locked({ onProfile }) {
@@ -71,12 +70,12 @@ export default function ApplyAssistanceScreen() {
   const navigation = useNavigation();
   const {
     currentUser,
-    addReceiverApplication,
-    prependReceiverNotification,
+    submitAssistanceRequest,
   } = useAuth();
 
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [form, setForm] = useState({
     purpose: '',
@@ -102,34 +101,28 @@ export default function ApplyAssistanceScreen() {
     step === 3 ||
     step === 4;
 
-  const submit = () => {
-    const application = buildReceiverApplicationFromFlow({
-      categoryId,
-      form,
-      user: currentUser,
-    });
-    addReceiverApplication(application);
-    prependReceiverNotification({
-      id: `rn-${Date.now()}`,
-      title: 'Application Submitted',
-      message: `${application.id} has been submitted to AJA Abayahastham for review.`,
-      time: 'Just now',
-      group: 'today',
-      read: false,
-      icon: 'document-outline',
-    });
-    Alert.alert('Application Submitted', 'Thank you. AJA will review your request.', [
-      {
-        text: 'View Applications',
-        onPress: () => {
-          setStarted(false);
-          setStep(1);
-          setCategoryId('');
-          setForm({ purpose: '', amount: '', description: '', notes: '' });
-          navigation.navigate('Applications');
-        },
-      },
-    ]);
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      await submitAssistanceRequest({
+        categoryId,
+        categoryTitle: cat?.title,
+        form,
+      });
+      Alert.alert(
+        'Give Away',
+        'Your application has been submitted to AJA Abayahastham for review.',
+        [{ text: 'View applications', onPress: () => navigation.navigate('Applications') }]
+      );
+      setStarted(false);
+      setStep(1);
+      setCategoryId('');
+      setForm({ purpose: '', amount: '', description: '', notes: '' });
+    } catch (err) {
+      Alert.alert('Give Away', err.message || 'Could not submit application.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!started) {
@@ -283,7 +276,7 @@ export default function ApplyAssistanceScreen() {
             onPress={() => setStep((s) => s + 1)}
           />
         ) : (
-          <Button title="Submit Application" onPress={submit} />
+          <Button title="Submit Application" onPress={submit} loading={submitting} disabled={submitting} />
         )}
       </View>
     </Screen>

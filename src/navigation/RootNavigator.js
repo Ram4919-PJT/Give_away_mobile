@@ -4,6 +4,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LogoutOverlay from '../components/LogoutOverlay';
+import LogoutConfirmModal from '../components/LogoutConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -16,6 +18,8 @@ import {
   NgoReportsScreen,
 } from '../screens/shells/roleHomes';
 import DonorSettingsScreen from '../screens/donor/DonorSettingsScreen';
+import DonorNotificationsScreen from '../screens/donor/DonorNotificationsScreen';
+import DonorVerifyScreen from '../screens/donor/DonorVerifyScreen';
 import DonateHubScreen from '../screens/donor/DonateHubScreen';
 import DonateMoneyScreen from '../screens/donor/DonateMoneyScreen';
 import DonateItemScreen from '../screens/donor/DonateItemScreen';
@@ -71,6 +75,7 @@ const NgoProfileStackNav = createNativeStackNavigator();
 const RequestsStackNav = createNativeStackNavigator();
 const InventoryStackNav = createNativeStackNavigator();
 const QueueStackNav = createNativeStackNavigator();
+const DonorSettingsStackNav = createNativeStackNavigator();
 const MoreStackNav = createNativeStackNavigator();
 
 function DonateStack() {
@@ -148,6 +153,16 @@ function AdminQueueStack() {
       <QueueStackNav.Screen name="VerificationList" component={AdminVerificationListScreen} />
       <QueueStackNav.Screen name="VerificationDetail" component={AdminVerificationDetailScreen} />
     </QueueStackNav.Navigator>
+  );
+}
+
+function DonorSettingsStack() {
+  return (
+    <DonorSettingsStackNav.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <DonorSettingsStackNav.Screen name="DonorSettings" component={DonorSettingsScreen} />
+      <DonorSettingsStackNav.Screen name="DonorNotifications" component={DonorNotificationsScreen} />
+      <DonorSettingsStackNav.Screen name="DonorVerify" component={DonorVerifyScreen} />
+    </DonorSettingsStackNav.Navigator>
   );
 }
 
@@ -265,7 +280,7 @@ function DonorTabs() {
         { name: 'Donate', component: DonateStack },
         { name: 'Donations', component: DonationsStack },
         { name: 'Impact', component: MyImpactScreen },
-        { name: 'Settings', component: DonorSettingsScreen },
+        { name: 'Settings', component: DonorSettingsStack },
       ]}
     />
   );
@@ -337,7 +352,15 @@ function AppByRole() {
 }
 
 export default function RootNavigator() {
-  const { isAuthenticated, authLoading } = useAuth();
+  const {
+    isAuthenticated,
+    authLoading,
+    logoutLoading,
+    logoutConfirmOpen,
+    cancelLogout,
+    confirmLogout,
+    currentUser,
+  } = useAuth();
 
   if (authLoading) {
     return (
@@ -348,8 +371,18 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      {isAuthenticated ? <AppByRole /> : <AuthStack />}
-    </NavigationContainer>
+    <>
+      <LogoutOverlay visible={logoutLoading} />
+      <LogoutConfirmModal
+        visible={logoutConfirmOpen}
+        userName={currentUser?.name}
+        loading={logoutLoading}
+        onCancel={cancelLogout}
+        onConfirm={confirmLogout}
+      />
+      <NavigationContainer>
+        {isAuthenticated ? <AppByRole /> : <AuthStack />}
+      </NavigationContainer>
+    </>
   );
 }

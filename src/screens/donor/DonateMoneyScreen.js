@@ -23,6 +23,7 @@ import {
   WALLET_OPTIONS,
 } from '../../data/donateMoneyConfig';
 import { formatCurrency } from '../../utils/format';
+import { buildMoneyDonationNotes } from '../../api/mappers';
 import { colors, radius, spacing, typography } from '../../theme';
 
 function FieldLabel({ children }) {
@@ -216,11 +217,12 @@ function PaymentPanel({ payment, amount, onPay, disabled }) {
 
 export default function DonateMoneyScreen() {
   const navigation = useNavigation();
-  const { currentUser, addDonation } = useAuth();
+  const { submitDonation } = useAuth();
   const [amount, setAmount] = useState('');
   const [purpose, setPurpose] = useState('General Donation');
   const [payment, setPayment] = useState(null);
   const [purposeOpen, setPurposeOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const numericAmount = Number(amount) || 0;
   const isCheckout = payment !== null;
@@ -230,7 +232,7 @@ export default function DonateMoneyScreen() {
     [payment]
   );
 
-  const submitDonation = () => {
+  const submitDonationHandler = async () => {
     if (!numericAmount || numericAmount <= 0) {
       Alert.alert('Give Away', 'Enter a valid amount.');
       return;
@@ -240,28 +242,27 @@ export default function DonateMoneyScreen() {
       return;
     }
 
-    addDonation({
-      id: `don-${Date.now()}`,
-      donor: currentUser?.name,
-      donorEmail: currentUser?.email,
-      type: 'Financial',
-      amount: numericAmount,
-      fund: purpose,
-      purpose,
-      details: `${formatCurrency(amount)} donation for ${purpose}`,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Pending Verification',
-      paymentMethod: payment,
-    });
-
-    Alert.alert(
-      'Thank you',
-      'Donation submitted! Thank you for supporting AJA Abayahastham.',
-      [{ text: 'OK', onPress: () => navigation.navigate('DonateHub') }]
-    );
-    setAmount('');
-    setPayment(null);
-    setPurpose('General Donation');
+    setSubmitting(true);
+    try {
+      await submitDonation({
+        donation_type: 'MONEY',
+        amount: numericAmount,
+        currency: 'INR',
+        notes: buildMoneyDonationNotes({ purpose, amount: numericAmount }),
+      });
+      Alert.alert(
+        'Thank you',
+        'Donation submitted! Thank you for supporting AJA Abayahastham.',
+        [{ text: 'OK', onPress: () => navigation.navigate('DonateHub') }]
+      );
+      setAmount('');
+      setPayment(null);
+      setPurpose('General Donation');
+    } catch (err) {
+      Alert.alert('Give Away', err.message || 'Could not submit donation.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -381,8 +382,8 @@ export default function DonateMoneyScreen() {
           <PaymentPanel
             payment={payment}
             amount={numericAmount}
-            onPay={submitDonation}
-            disabled={!numericAmount}
+            onPay={submitDonationHandler}
+            disabled={!numericAmount || submitting}
           />
         </Card>
       ) : null}

@@ -14,11 +14,16 @@ import { colors, radius, spacing, typography } from '../../theme';
 
 export default function MyDonationsScreen() {
   const navigation = useNavigation();
-  const { currentUser, donations } = useAuth();
+  const { currentUser, donations, platformLoading, refreshPlatformData } = useAuth();
   const list = getDonorDonations(donations, currentUser);
 
   return (
-    <Screen scroll contentStyle={styles.content}>
+    <Screen
+      scroll
+      contentStyle={styles.content}
+      refreshing={platformLoading}
+      onRefresh={() => refreshPlatformData(currentUser?.role)}
+    >
       <View style={styles.hero}>
         <Text style={styles.title}>My Donations</Text>
         <Text style={styles.subtitle}>
@@ -26,7 +31,12 @@ export default function MyDonationsScreen() {
         </Text>
       </View>
 
-      {list.length === 0 ? (
+      {platformLoading && !list.length ? (
+        <Card style={styles.empty}>
+          <Text style={styles.emptyTitle}>Loading donations…</Text>
+          <Text style={styles.emptyBody}>Fetching your contribution history.</Text>
+        </Card>
+      ) : list.length === 0 ? (
         <Card style={styles.empty}>
           <Text style={styles.emptyEmoji}>🎁</Text>
           <Text style={styles.emptyTitle}>No Donations Yet</Text>

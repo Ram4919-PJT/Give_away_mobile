@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,7 +21,7 @@ export function BrandMark({ size = 48 }) {
   );
 }
 
-export function Screen({ children, style, scroll = false, contentStyle, edges }) {
+export function Screen({ children, style, scroll = false, contentStyle, edges, refreshing, onRefresh }) {
   const insets = useSafeAreaInsets();
   const padBottom = edges?.includes('bottom') === false
     ? spacing.md
@@ -38,6 +39,11 @@ export function Screen({ children, style, scroll = false, contentStyle, edges })
           contentContainerStyle={[styles.scrollContent, padding, contentStyle]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primaryHover} />
+            ) : undefined
+          }
         >
           {children}
         </ScrollView>

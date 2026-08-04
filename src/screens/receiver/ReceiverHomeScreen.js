@@ -38,7 +38,7 @@ const ACTIONS = [
 
 export default function ReceiverHomeScreen() {
   const navigation = useNavigation();
-  const { currentUser, receiverApplications, receiverNotifications } = useAuth();
+  const { currentUser, receiverApplications, receiverNotifications, platformLoading, refreshPlatformData } = useAuth();
   const apps = getReceiverApps(receiverApplications, currentUser);
   const stats = getReceiverStats(apps);
   const recent = apps.slice(0, 2);
@@ -47,7 +47,7 @@ export default function ReceiverHomeScreen() {
   const firstName = (currentUser?.name || 'there').split(' ')[0];
 
   return (
-    <Screen scroll contentStyle={styles.content}>
+    <Screen scroll contentStyle={styles.content} refreshing={platformLoading} onRefresh={() => refreshPlatformData(currentUser?.role)}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.greeting}>Welcome back</Text>

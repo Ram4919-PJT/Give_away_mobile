@@ -10,8 +10,10 @@ export default function RoleHomeShell({
   subtitle,
   actions = [],
   stats = [],
+  refreshing,
+  onRefresh,
 }) {
-  const { currentUser, logout, roleDisplayName } = useAuth();
+  const { currentUser, requestLogout, logoutLoading, roleDisplayName } = useAuth();
   const navigation = useNavigation();
 
   const handleAction = (action) => {
@@ -27,7 +29,7 @@ export default function RoleHomeShell({
   };
 
   return (
-    <Screen scroll contentStyle={styles.content}>
+    <Screen scroll contentStyle={styles.content} refreshing={refreshing} onRefresh={onRefresh}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Welcome back</Text>
@@ -36,18 +38,22 @@ export default function RoleHomeShell({
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{roleDisplayName(currentUser?.role)}</Text>
             </View>
-            {currentUser?.verified ? (
+            {currentUser?.verified === true ? (
               <View style={[styles.badge, styles.badgeOk]}>
                 <Text style={[styles.badgeText, styles.badgeOkText]}>Verified</Text>
               </View>
-            ) : (
+            ) : currentUser?.verified === 'pending' ? (
               <View style={[styles.badge, styles.badgeWarn]}>
                 <Text style={[styles.badgeText, styles.badgeWarnText]}>Pending</Text>
+              </View>
+            ) : (
+              <View style={[styles.badge, styles.badgeMuted]}>
+                <Text style={[styles.badgeText, styles.badgeMutedText]}>Basic</Text>
               </View>
             )}
           </View>
         </View>
-        <Pressable style={styles.logout} onPress={logout} hitSlop={8}>
+        <Pressable style={styles.logout} onPress={requestLogout} hitSlop={8} disabled={logoutLoading}>
           <Ionicons name="log-out-outline" size={22} color={colors.textSecondary} />
         </Pressable>
       </View>
@@ -84,7 +90,13 @@ export default function RoleHomeShell({
         ))}
       </View>
 
-      <Button title="Sign out" variant="secondary" onPress={logout} style={{ marginTop: spacing.md }} />
+      <Button
+        title={logoutLoading ? 'Signing out…' : 'Sign out'}
+        variant="secondary"
+        onPress={requestLogout}
+        loading={logoutLoading}
+        style={{ marginTop: spacing.md }}
+      />
     </Screen>
   );
 }
@@ -138,6 +150,12 @@ const styles = StyleSheet.create({
   },
   badgeWarnText: {
     color: '#C2410C',
+  },
+  badgeMuted: {
+    backgroundColor: colors.borderSoft,
+  },
+  badgeMutedText: {
+    color: colors.textMuted,
   },
   logout: {
     width: 44,

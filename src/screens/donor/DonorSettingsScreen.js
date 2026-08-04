@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { Button, BottomSheet, Card, Screen } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -99,7 +100,9 @@ function notify(message) {
 }
 
 export default function DonorSettingsScreen() {
-  const { currentUser, updateSettings, logout } = useAuth();
+  const navigation = useNavigation();
+  const { currentUser, updateSettings, requestLogout, logoutLoading, notifications } = useAuth();
+  const unread = (notifications || []).filter((n) => !n.read).length;
 
   const initial = useMemo(
     () => ({
@@ -181,6 +184,36 @@ export default function DonorSettingsScreen() {
           Manage your account preferences, notifications, privacy, and donation settings.
         </Text>
       </View>
+
+      <Card>
+        <SectionHeader
+          icon="person-circle-outline"
+          title="Account"
+          subtitle="Notifications, verification, and account tools."
+        />
+        <ActionRow
+          title="Notifications"
+          description="View donation and verification updates from AJA Abayahastham."
+          meta={unread > 0 ? `${unread} unread` : undefined}
+          buttonLabel="Open"
+          buttonIcon="notifications-outline"
+          onPress={() => navigation.navigate('DonorNotifications')}
+        />
+        <ActionRow
+          title="Donor Verification"
+          description={
+            currentUser?.verified === true
+              ? 'Your account is verified.'
+              : currentUser?.verified === 'pending'
+                ? 'Verification is under review.'
+                : 'Submit documents to become a verified donor.'
+          }
+          buttonLabel={currentUser?.verified === true ? 'Verified' : 'Manage'}
+          buttonIcon="shield-checkmark-outline"
+          ghost={currentUser?.verified === true}
+          onPress={() => navigation.navigate('DonorVerify')}
+        />
+      </Card>
 
       <Card>
         <SectionHeader
@@ -434,7 +467,7 @@ export default function DonorSettingsScreen() {
             style={{ flex: 1 }}
           />
         </View>
-        <Button title="Sign out" variant="ghost" onPress={logout} />
+        <Button title={logoutLoading ? 'Signing out…' : 'Sign out'} variant="ghost" onPress={requestLogout} loading={logoutLoading} />
       </View>
 
       <BottomSheet
