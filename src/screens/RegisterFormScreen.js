@@ -28,10 +28,10 @@ export default function RegisterFormScreen({ navigation, route }) {
 
   const set = (key) => (value) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setLoading(true);
     setError('');
-    const result = register(role, form);
+    const result = await register(role, form);
     setLoading(false);
     if (!result.ok) setError(result.error);
   };
@@ -44,7 +44,9 @@ export default function RegisterFormScreen({ navigation, route }) {
       </Pressable>
 
       <Text style={styles.title}>{TITLES[role] || 'Register'}</Text>
-      <Text style={styles.subtitle}>Wireframe form only — creates a mock mobile session.</Text>
+      <Text style={styles.subtitle}>
+        Creates your account on the platform. Password must include upper, lower, digit, and special character.
+      </Text>
 
       <Card style={styles.card}>
         {role === 'ngo' ? (
@@ -71,13 +73,14 @@ export default function RegisterFormScreen({ navigation, route }) {
           onChangeText={set('email')}
           placeholder="you@example.com"
           keyboardType="email-address"
+          autoCapitalize="none"
           style={{ marginTop: spacing.md }}
         />
         <TextField
           label="Password"
           value={form.password}
           onChangeText={set('password')}
-          placeholder="Create a password"
+          placeholder="e.g. Test@1234"
           secureTextEntry
           style={{ marginTop: spacing.md }}
         />
@@ -85,7 +88,7 @@ export default function RegisterFormScreen({ navigation, route }) {
           label="Mobile"
           value={form.mobile}
           onChangeText={set('mobile')}
-          placeholder="+91 ..."
+          placeholder="9876543210"
           keyboardType="phone-pad"
           style={{ marginTop: spacing.md }}
         />
