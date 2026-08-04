@@ -1,19 +1,31 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import {
-  getDemoAccountByEmail,
-  getDemoAccountById,
-  normalizeLoginRole,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  login as iamLogin,
+  register as iamRegister,
+  logout as iamLogout,
+  refresh as iamRefresh,
+  getMe,
+  saveTokens,
+  clearTokens,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+} from '../api/iamClient';
+import {
+  mapIamUser,
+  mapRoleToIam,
+  normalizeMobileInput,
   roleDisplayName,
-} from '../data/demoAccounts';
+} from '../utils/roleMap';
 import { INITIAL_DONOR_SETTINGS } from '../data/donorSettingsData';
 import { INITIAL_RECEIVER_SETTINGS } from '../data/receiverSettingsData';
 import { INITIAL_NGO_SETTINGS } from '../data/ngoSettingsData';
-import { DEMO_DONATIONS } from '../data/demoDonations';
-import {
-  DEMO_RECEIVER_APPLICATIONS,
-  DEMO_RECEIVER_NOTIFICATIONS,
-} from '../data/demoReceiverData';
-import { DEMO_NGO_REQUESTS } from '../data/demoNgoData';
 
 const AuthContext = createContext(null);
 
@@ -24,120 +36,123 @@ function defaultSettingsForRole(role) {
   return {};
 }
 
-function buildUserFromDemo(account) {
+function enrichUser(base) {
   return {
-    name: account.name,
-    email: account.email,
-    role: account.role,
-    verified: account.verified,
-    verificationStatus: account.verificationStatus,
-    isDemoAccount: true,
-    mobile: account.profile?.mobile || '+91 98765 43210',
-    city: account.profile?.city || '',
-    state: account.profile?.state || '',
-    address: account.profile?.address || '',
-    pincode: account.profile?.pincode || '',
-    repName: account.profile?.repName || '',
-    website: account.profile?.website || '',
-    regNumber: account.profile?.regNumber || '',
-    mission: account.profile?.mission || '',
-    about: account.profile?.about || '',
-    focusAreas: account.profile?.focusAreas || [],
-    memberSince: account.profile?.memberSince || '2025',
-    status: account.profile?.status,
-    features: account.features || [],
+    ...base,
+    city: base.city || '',
+    state: base.state || '',
+    address: base.address || '',
+    features: base.features || [],
     settings: {
-      ...defaultSettingsForRole(account.role),
-      ...(account.settings || {}),
+      ...defaultSettingsForRole(base.role),
+      ...(base.settings || {}),
     },
   };
 }
 
-export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [donations, setDonations] = useState(DEMO_DONATIONS);
-  const [receiverApplications, setReceiverApplications] = useState(DEMO_RECEIVER_APPLICATIONS);
-  const [receiverNotifications, setReceiverNotifications] = useState(DEMO_RECEIVER_NOTIFICATIONS);
-  const [ngoRequests, setNgoRequests] = useState(DEMO_NGO_REQUESTS);
+async function loadUserFromToken(accessToken) {
+  const me = await getMe(accessToken);
+  return enrichUser(mapIamUser(me));
+}
 
-  const loginAsDemo = useCallback((accountId) => {
-    const account = getDemoAccountById(accountId);
-    if (!account) return { ok: false, error: 'Demo account not found.' };
-    const user = buildUserFromDemo(account);
-    setCurrentUser(user);
-    return { ok: true, user };
+export function AuthProvider({ children }) {
+  const [authLoading, setAuthLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [donations, setDonations] = useState([]);
+  const [receiverApplications, setReceiverApplications] = useState([]);
+  const [receiverNotifications, setReceiverNotifications] = useState([]);
+  const [ngoRequests, setNgoRequests] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const refreshToken = await getStoredRefreshToken();
+      const accessToken = await getStoredAccessToken();
+
+      if (!refreshToken && !accessToken) {
+        if (!cancelled) setAuthLoading(false);
+        return;
+      }
+
+      try {
+        let token = accessToken;
+        if (refreshToken) {
+          const tokens = await iamRefresh(refreshToken);
+          await saveTokens(tokens);
+          token = tokens.access_token;
+        }
+        const user = await loadUserFromToken(token);
+        if (!cancelled) setCurrentUser(user);
+      } catch {
+        await clearTokens();
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
+    }
+
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const login = useCallback((email, password, roleKey) => {
+  const login = useCallback(async (email, password) => {
     const trimmed = (email || '').trim().toLowerCase();
-    const role = normalizeLoginRole(roleKey);
-
     if (!trimmed) return { ok: false, error: 'Please enter your email.' };
     if (!password) return { ok: false, error: 'Please enter your password.' };
 
-    const demo = getDemoAccountByEmail(trimmed);
-
-    if (demo) {
-      if (demo.password !== password) {
-        return { ok: false, error: 'Incorrect password. Demo password is 123456.' };
-      }
-      if (demo.role !== role) {
-        return {
-          ok: false,
-          error: `This account is a ${roleDisplayName(demo.role)}. Switch the role selector and try again.`,
-        };
-      }
-      const user = buildUserFromDemo(demo);
+    try {
+      const tokens = await iamLogin(trimmed, password);
+      await saveTokens(tokens);
+      const user = await loadUserFromToken(tokens.access_token);
       setCurrentUser(user);
       return { ok: true, user };
+    } catch (err) {
+      return { ok: false, error: err.message || 'Invalid email or password.' };
     }
-
-    if (password.length < 4) {
-      return { ok: false, error: 'Password must be at least 4 characters for wireframe login.' };
-    }
-
-    const user = {
-      name: trimmed.split('@')[0] || 'Demo User',
-      email: trimmed,
-      role,
-      verified: false,
-      verificationStatus: 'registered',
-      isDemoAccount: false,
-      mobile: '',
-      city: '',
-      state: '',
-      address: '',
-      features: ['Wireframe session'],
-      settings: defaultSettingsForRole(role),
-    };
-    setCurrentUser(user);
-    return { ok: true, user };
   }, []);
 
-  const register = useCallback((roleKey, form) => {
-    const role = normalizeLoginRole(roleKey);
-    const email = (form.email || '').trim().toLowerCase();
-    if (!email || !form.password || !form.name) {
-      return { ok: false, error: 'Please fill name, email, and password.' };
+  const register = useCallback(async (roleKey, form) => {
+    const roleName = mapRoleToIam(roleKey);
+    if (!roleName) {
+      return { ok: false, error: 'Invalid role for registration.' };
     }
 
-    const user = {
-      name: form.name.trim(),
-      email,
-      role,
-      verified: false,
-      verificationStatus: 'registered',
-      isDemoAccount: false,
-      mobile: form.mobile || '',
-      city: form.city || '',
-      state: form.state || '',
-      address: form.address || '',
-      orgName: form.orgName || '',
-      features: ['Newly registered (wireframe)'],
-      settings: defaultSettingsForRole(role),
-    };
-    setCurrentUser(user);
-    return { ok: true, user };
+    const email = (form.email || '').trim().toLowerCase();
+    const fullName =
+      roleKey === 'ngo' && form.orgName
+        ? form.orgName.trim()
+        : (form.name || '').trim();
+    const mobile = normalizeMobileInput(form.mobile);
+
+    if (!fullName) return { ok: false, error: 'Please enter your name.' };
+    if (!email) return { ok: false, error: 'Please enter your email.' };
+    if (!form.password) return { ok: false, error: 'Please enter a password.' };
+    if (mobile.length !== 10) {
+      return { ok: false, error: 'Enter a valid 10-digit mobile number.' };
+    }
+
+    try {
+      const tokens = await iamRegister({
+        full_name: fullName,
+        email,
+        mobile,
+        password: form.password,
+        role_name: roleName,
+      });
+      await saveTokens(tokens);
+      const user = enrichUser({
+        ...mapIamUser(await getMe(tokens.access_token)),
+        city: form.city || '',
+        state: form.state || '',
+        orgName: form.orgName || '',
+      });
+      setCurrentUser(user);
+      return { ok: true, user };
+    } catch (err) {
+      return { ok: false, error: err.message || 'Registration failed.' };
+    }
   }, []);
 
   const updateSettings = useCallback((nextSettings) => {
@@ -180,20 +195,23 @@ export function AuthProvider({ children }) {
     setReceiverNotifications((prev) => [notification, ...prev]);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = await getStoredRefreshToken();
+    await clearTokens();
     setCurrentUser(null);
+    await iamLogout(refreshToken);
   }, []);
 
   const value = useMemo(
     () => ({
       currentUser,
       isAuthenticated: !!currentUser,
+      authLoading,
       donations,
       receiverApplications,
       receiverNotifications,
       ngoRequests,
       login,
-      loginAsDemo,
       register,
       updateSettings,
       updateUser,
@@ -207,12 +225,12 @@ export function AuthProvider({ children }) {
     }),
     [
       currentUser,
+      authLoading,
       donations,
       receiverApplications,
       receiverNotifications,
       ngoRequests,
       login,
-      loginAsDemo,
       register,
       updateSettings,
       updateUser,

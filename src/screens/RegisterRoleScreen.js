@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Screen } from '../components/ui';
-import { REGISTER_ROLES } from '../data/demoAccounts';
+import { REGISTER_ROLES } from '../utils/roleMap';
 import { colors, spacing, typography } from '../theme';
 
 const ICONS = {

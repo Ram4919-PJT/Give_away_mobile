@@ -1,70 +1,101 @@
-# Give Away — Mobile Wireframe (React Native / Expo)
+# Give Away — Mobile App
 
-Clean mobile UI wireframe for **Give Away / Aja Abayahastham**, mirroring the web project in `Demo_Give_away`.
+React Native / Expo mobile app for the Give Away platform. Auth is connected to the real IAM API via the backend gateway.
 
-This app is a **UI/UX prototype** with mock authentication and demo accounts — no real backend.
+## Prerequisites
 
-## Features (first deliverable)
+- **Node.js 18+**
+- **Expo CLI** (via `npx expo`)
+- **Backend running** on port 8000 (see `give-away-backend/README.md`)
+- **Expo Go** app on your phone, or Android/iOS emulator
 
-- Welcome screen with Login / Register
-- Role-based login: **Donor · Receiver · NGO · Admin**
-- Email + password mock sign-in
-- Demo accounts bottom sheet (one-tap login, password `123456`)
-- Register role picker + Donor / Receiver / NGO forms (mock session)
-- Role-based bottom tab homes with neat shells
+## Install dependencies
 
-## Run
-
-```bash
-cd d:\Aja\Demo_Give_away_mobile
+```powershell
+cd Give_away_mobile
 npm install
+```
+
+## Configure environment
+
+```powershell
+copy .env.example .env
+```
+
+| Environment | `EXPO_PUBLIC_IAM_API_URL` |
+|-------------|---------------------------|
+| iOS simulator / Expo web (same machine) | `http://localhost:8000/api/v1` |
+| Android emulator | `http://10.0.2.2:8000/api/v1` |
+| Physical device | `http://<YOUR_PC_LAN_IP>:8000/api/v1` |
+
+## Start the app
+
+**Terminal 1 — Backend:**
+
+```powershell
+cd give-away-backend
+python run.py
+```
+
+**Terminal 2 — Mobile:**
+
+```powershell
+cd Give_away_mobile
 npx expo start
 ```
 
 Then press:
+
 - `a` — Android emulator / device
-- `i` — iOS simulator (macOS)
-- scan the QR code with **Expo Go** on a phone
+- `i` — iOS simulator (macOS only)
+- Scan the QR code with **Expo Go** on a phone
 
 Web preview (optional):
 
-```bash
+```powershell
 npx expo start --web
 ```
 
-## Demo accounts
+## Login / register
 
-| Role | Email | Password |
-|------|-------|----------|
-| Verified Donor | `verified.donor@demo.com` | `123456` |
-| Pending Donor | `pending.donor@demo.com` | `123456` |
-| Verified Receiver | `verified.receiver@demo.com` | `123456` |
-| Pending Receiver | `pending.receiver@demo.com` | `123456` |
-| Verified NGO | `verified.ngo@demo.com` | `123456` |
-| Pending NGO | `pending.ngo@demo.com` | `123456` |
-| Admin | `admin@demo.com` | `123456` |
+- **Register** — creates a real account via `POST /api/v1/auth/register`
+- **Login** — role comes from the server after login (no role picker on login)
+- Tokens are stored in **AsyncStorage**
+- Dashboards are mostly empty until Core/Communication APIs are wired in the UI
 
-Or open **Try demo accounts** on the Login screen.
+### Test accounts (after backend register)
+
+| Email | Password |
+|-------|----------|
+| `donor@test.com` | `Test@1234` |
+| `receiver@test.com` | `Test@1234` |
+| `ngo@test.com` | `Test@1234` |
+
+Mobile must be a 10-digit Indian number starting with 6–9 (e.g. `9876543210`).
+
+## How API calls work
+
+```
+Mobile app  →  EXPO_PUBLIC_IAM_API_URL  (e.g. http://localhost:8000/api/v1)
+            →  API Gateway (:8000)
+            →  IAM service
+```
 
 ## Project structure
 
-```text
+```
 src/
-  components/     Shared UI (buttons, sheets, fields)
-  context/        Mock AuthContext
-  data/           Demo accounts (mirrored from web)
-  navigation/     Auth stack + role tab navigators
-  screens/        Welcome, Login, Register, role shells
-  theme/          Colors, spacing, radius (Give Away brand)
+  api/iamClient.js       # IAM API client (AsyncStorage for tokens)
+  context/AuthContext.js # Auth state
+  navigation/            # Auth stack + role tab navigators
+  screens/               # Welcome, login, register, dashboards
+  theme/                 # Colors, spacing (Give Away brand)
 ```
 
-## Brand
+## Troubleshooting
 
-- Primary green `#22C55E`
-- Accent blue `#2563EB`
-- Background `#F8FAFC`
-- 8px spacing · 44px+ touch targets · 16–20px cards
-
-## Next
-
-Port remaining web feature screens role-by-role (donate flows, applications, NGO requests, admin queue) into these tab shells without cluttering the home screens.
+| Problem | Fix |
+|---------|-----|
+| Network request failed | Backend must be running; use `10.0.2.2` on Android emulator |
+| Physical device can't connect | Use your PC's LAN IP, not `localhost` |
+| Login fails | Check `.env` URL matches your setup |
