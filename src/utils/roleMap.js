@@ -2,7 +2,6 @@ const IAM_TO_MOBILE = {
   DONOR: 'donor',
   RECEIVER: 'receiver',
   NGO: 'ngo',
-  SUPER_ADMIN: 'super-admin',
 };
 
 const MOBILE_TO_IAM = {
@@ -11,12 +10,18 @@ const MOBILE_TO_IAM = {
   ngo: 'NGO',
 };
 
+export const USER_APP_ROLES = ['donor', 'receiver', 'ngo'];
+
 export function mapRoleFromIam(iamRoleName) {
-  return IAM_TO_MOBILE[iamRoleName] || 'donor';
+  return IAM_TO_MOBILE[iamRoleName] || null;
 }
 
 export function mapRoleToIam(mobileRole) {
   return MOBILE_TO_IAM[mobileRole] || null;
+}
+
+export function isUserAppRole(role) {
+  return USER_APP_ROLES.includes(role);
 }
 
 export function mapIamUser(iamUser) {
@@ -67,8 +72,9 @@ export function roleDisplayName(role) {
     donor: 'Donor',
     receiver: 'Receiver',
     ngo: 'NGO Partner',
-    'super-admin': 'Admin',
-    admin: 'Admin',
   };
   return map[role] || role;
 }
+
+export const ADMIN_PORTAL_MESSAGE =
+  'Admin accounts must sign in through the admin portal, not this app.';

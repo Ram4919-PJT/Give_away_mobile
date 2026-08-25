@@ -22,6 +22,8 @@ import {
   mapRoleToIam,
   normalizeMobileInput,
   roleDisplayName,
+  isUserAppRole,
+  ADMIN_PORTAL_MESSAGE,
 } from '../utils/roleMap';
 import { fetchPlatformData, coreClient, notificationsClient } from '../api/platformApi';
 import { mapDonationFromApi, mapVerificationFromApi, mapAssistanceRequestFromApi, buildAssistanceRequestPayload } from '../api/mappers';
@@ -76,13 +78,13 @@ export function AuthProvider({ children }) {
     setPlatformLoading(true);
     try {
       const data = await fetchPlatformData(role);
-      if (role === 'donor' || role === 'super-admin') {
+      if (role === 'donor') {
         setDonations(data.donations || []);
       }
       setNotifications(data.notifications || []);
       setReceiverNotifications(data.receiverNotifications || []);
       setVerifications(data.verifications || []);
-      if (role === 'receiver' || role === 'super-admin') {
+      if (role === 'receiver') {
         setReceiverApplications(data.receiverApplications || []);
       }
 
@@ -122,6 +124,10 @@ export function AuthProvider({ children }) {
         }
         const user = await loadUserFromToken();
         if (!cancelled) {
+          if (!isUserAppRole(user.role)) {
+            await clearTokens();
+            return;
+          }
           setCurrentUser(user);
           await refreshPlatformData(user.role);
         }
@@ -147,6 +153,10 @@ export function AuthProvider({ children }) {
       const tokens = await iamLogin(trimmed, password);
       await saveTokens(tokens);
       const user = await loadUserFromToken();
+      if (!isUserAppRole(user.role)) {
+        await clearTokens();
+        return { ok: false, error: ADMIN_PORTAL_MESSAGE };
+      }
       setCurrentUser(user);
       await refreshPlatformData(user.role);
       return { ok: true, user };
@@ -190,6 +200,10 @@ export function AuthProvider({ children }) {
         state: form.state || '',
         orgName: form.orgName || '',
       });
+      if (!isUserAppRole(user.role)) {
+        await clearTokens();
+        return { ok: false, error: ADMIN_PORTAL_MESSAGE };
+      }
       setCurrentUser(user);
       await refreshPlatformData(user.role);
       return { ok: true, user };

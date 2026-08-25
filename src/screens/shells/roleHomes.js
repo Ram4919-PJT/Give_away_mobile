@@ -73,8 +73,6 @@ export function ReceiverHomeScreen() {
 
 export { default as NgoHomeScreen } from '../ngo/NgoHomeScreen';
 
-export { default as AdminHomeScreen } from '../admin/AdminHomeScreen';
-
 export function DonationsScreen() {
   return (
     <PlaceholderScreen
@@ -147,19 +145,3 @@ export function MoreScreen() {
 }
 
 export { default as NgoProfileScreen } from '../ngo/NgoProfileScreen';
-
-export function QueueScreen() {
-  return <PlaceholderScreen title="Verifications" description="Admin verification queue shell." />;
-}
-
-export function UsersScreen() {
-  return <PlaceholderScreen title="Users" description="Admin user management shell." />;
-}
-
-export function ReportsScreen() {
-  return <PlaceholderScreen title="Reports" description="Admin reports and analytics shell." />;
-}
-
-export function SettingsScreen() {
-  return <PlaceholderScreen title="Settings" description="Admin and role settings shell." />;
-}

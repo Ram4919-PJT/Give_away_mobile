@@ -1,4 +1,10 @@
-/** Wireframe config — Apply for Financial Assistance guided flow */
+/** Wireframe config — Apply for Financial Assistance guided flow
+ *
+ * NOTE (STEP 2): Canonical assistance categories live on the backend at
+ * GET /core/config/receiver-assistance. This mobile list uses different
+ * business labels (Women & Child, Senior Citizen) and should migrate to
+ * the API in a future release — see backend MOBILE_LEGACY_CATEGORY_NOTES.
+ */
 
 export const APPLY_FLOW_STEPS = [
   { id: 1, label: 'Choose Type' },

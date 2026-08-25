@@ -45,25 +45,6 @@ import NgoSettingsScreen from '../screens/ngo/NgoSettingsScreen';
 import NgoOrganizationProfileScreen from '../screens/ngo/NgoOrganizationProfileScreen';
 import NgoBeneficiariesScreen from '../screens/ngo/NgoBeneficiariesScreen';
 import NgoNotificationsScreen from '../screens/ngo/NgoNotificationsScreen';
-import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
-import {
-  AdminVerificationListScreen,
-  AdminVerificationDetailScreen,
-} from '../screens/admin/AdminVerificationScreens';
-import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
-import AdminReportsScreen from '../screens/admin/AdminReportsScreen';
-import {
-  AdminMoreHubScreen,
-  AdminPriorityScreen,
-  AdminInventoryScreen,
-  AdminFundsScreen,
-  AdminNgosScreen,
-  AdminDonationsScreen,
-  AdminFinancialScreen,
-  AdminNotificationsScreen,
-  AdminLogsScreen,
-  AdminSettingsScreen,
-} from '../screens/admin/AdminMoreScreens';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -74,9 +55,7 @@ const ProfileStackNav = createNativeStackNavigator();
 const NgoProfileStackNav = createNativeStackNavigator();
 const RequestsStackNav = createNativeStackNavigator();
 const InventoryStackNav = createNativeStackNavigator();
-const QueueStackNav = createNativeStackNavigator();
 const DonorSettingsStackNav = createNativeStackNavigator();
-const MoreStackNav = createNativeStackNavigator();
 
 function DonateStack() {
   return (
@@ -147,15 +126,6 @@ function InventoryStack() {
   );
 }
 
-function AdminQueueStack() {
-  return (
-    <QueueStackNav.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-      <QueueStackNav.Screen name="VerificationList" component={AdminVerificationListScreen} />
-      <QueueStackNav.Screen name="VerificationDetail" component={AdminVerificationDetailScreen} />
-    </QueueStackNav.Navigator>
-  );
-}
-
 function DonorSettingsStack() {
   return (
     <DonorSettingsStackNav.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
@@ -163,23 +133,6 @@ function DonorSettingsStack() {
       <DonorSettingsStackNav.Screen name="DonorNotifications" component={DonorNotificationsScreen} />
       <DonorSettingsStackNav.Screen name="DonorVerify" component={DonorVerifyScreen} />
     </DonorSettingsStackNav.Navigator>
-  );
-}
-
-function AdminMoreStack() {
-  return (
-    <MoreStackNav.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-      <MoreStackNav.Screen name="AdminMoreHub" component={AdminMoreHubScreen} />
-      <MoreStackNav.Screen name="AdminPriority" component={AdminPriorityScreen} />
-      <MoreStackNav.Screen name="AdminInventory" component={AdminInventoryScreen} />
-      <MoreStackNav.Screen name="AdminFunds" component={AdminFundsScreen} />
-      <MoreStackNav.Screen name="AdminNgos" component={AdminNgosScreen} />
-      <MoreStackNav.Screen name="AdminDonations" component={AdminDonationsScreen} />
-      <MoreStackNav.Screen name="AdminFinancial" component={AdminFinancialScreen} />
-      <MoreStackNav.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
-      <MoreStackNav.Screen name="AdminLogs" component={AdminLogsScreen} />
-      <MoreStackNav.Screen name="AdminSettings" component={AdminSettingsScreen} />
-    </MoreStackNav.Navigator>
   );
 }
 
@@ -196,12 +149,6 @@ function tabIcons(routeName, focused) {
     Requests: focused ? 'cube' : 'cube-outline',
     Inventory: focused ? 'archive' : 'archive-outline',
     Programs: focused ? 'flag' : 'flag-outline',
-    More: focused ? 'menu' : 'menu-outline',
-    Queue: focused ? 'checkmark-done' : 'checkmark-done-outline',
-    Users: focused ? 'people' : 'people-outline',
-    Reports: focused ? 'pie-chart' : 'pie-chart-outline',
-    Settings: focused ? 'settings' : 'settings-outline',
-    More: focused ? 'menu' : 'menu-outline',
   };
   return map[routeName] || 'ellipse-outline';
 }
@@ -315,19 +262,13 @@ function NgoTabs() {
   );
 }
 
-function AdminTabs() {
-  return (
-    <RoleTabs
-      roundedActive
-      screens={[
-        { name: 'Home', component: AdminHomeScreen },
-        { name: 'Queue', component: AdminQueueStack, label: 'Queue' },
-        { name: 'Users', component: AdminUsersScreen },
-        { name: 'Reports', component: AdminReportsScreen },
-        { name: 'More', component: AdminMoreStack },
-      ]}
-    />
-  );
+function AppByRole() {
+  const { currentUser } = useAuth();
+  const role = currentUser?.role;
+
+  if (role === 'receiver') return <ReceiverTabs />;
+  if (role === 'ngo') return <NgoTabs />;
+  return <DonorTabs />;
 }
 
 function AuthStack() {
@@ -339,16 +280,6 @@ function AuthStack() {
       <Stack.Screen name="RegisterForm" component={RegisterFormScreen} />
     </Stack.Navigator>
   );
-}
-
-function AppByRole() {
-  const { currentUser } = useAuth();
-  const role = currentUser?.role;
-
-  if (role === 'receiver') return <ReceiverTabs />;
-  if (role === 'ngo') return <NgoTabs />;
-  if (role === 'super-admin') return <AdminTabs />;
-  return <DonorTabs />;
 }
 
 export default function RootNavigator() {
